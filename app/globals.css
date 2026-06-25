@@ -1,26 +1,238 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f4f2ec;
+  --bgRGB: 244, 241, 236;
+  --surface: #fff;
+  --surface2: #fbf9f5;
+  --ink: #0b0f1a;
+  --ink2: #33302b;
+  --ink3: #4a463f;
+  --ink4: #6b655d;
+  --muted: #9a948b;
+  --faint: #b3ada3;
+  --line: 28, 26, 23;
+  --accent: #F5A623;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* Dark vars shared between system preference and forced dark */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --bg: #0f1318;
+    --bgRGB: 15, 19, 24;
+    --surface: #1a202b;
+    --surface2: #141922;
+    --ink: #f2f0e9;
+    --ink2: #dad7ce;
+    --ink3: #bcb8af;
+    --ink4: #9c978e;
+    --muted: #857f76;
+    --faint: #6b665e;
+    --line: 236, 238, 242;
   }
 }
 
+:root[data-theme="dark"] {
+  --bg: #0f1318;
+  --bgRGB: 15, 19, 24;
+  --surface: #1a202b;
+  --surface2: #141922;
+  --ink: #f2f0e9;
+  --ink2: #dad7ce;
+  --ink3: #bcb8af;
+  --ink4: #9c978e;
+  --muted: #857f76;
+  --faint: #6b665e;
+  --line: 236, 238, 242;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Manrope', -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+input::placeholder {
+  color: var(--faint);
+}
+
+@keyframes ccDrift {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes ccUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ccLive {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(214, 69, 69, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(214, 69, 69, 0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+/* Sidebar is position:fixed — main offset by margin-left:84px.
+   Mobile collapses to margin-left:0 and shows bottom nav. */
+.cc-main {}
+
+.cc-rail {
+  width: 84px;
+  overflow: hidden;
+  transition: width 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cc-rail:hover {
+  width: 256px;
+  box-shadow: 12px 0 40px -18px rgba(0, 0, 0, 0.24);
+}
+.cc-lbl {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.cc-rail:hover .cc-lbl {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Bottom nav: hidden on desktop */
+.cc-bottom-nav {
+  display: none;
+}
+
+/* Sidebar gear icon: hidden when collapsed, shown on hover */
+.cc-rail-gear {
+  display: none;
+}
+.cc-rail:hover .cc-rail-gear {
+  display: flex;
+}
+
+/* ── Mobile ≤ 768px ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Remove sidebar offset and leave room for bottom nav */
+  .cc-main {
+    margin-left: 0 !important;
+    padding-bottom: 72px !important;
+  }
+
+  /* Hide desktop sidebar — !important overrides the inline display:flex */
+  .cc-rail {
+    display: none !important;
+  }
+
+  /* Show bottom nav, fixed to viewport bottom */
+  .cc-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    height: calc(56px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--surface);
+    border-top: 1px solid rgba(var(--line), 0.10);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    align-items: stretch;
+  }
+
+  /* Tighten horizontal padding on all main pages */
+  .cc-page {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* Film hero: poster + title stack vertically */
+  .cc-film-hero {
+    flex-direction: column !important;
+    align-items: center !important;
+    padding: 20px 16px 0 !important;
+    gap: 20px !important;
+  }
+
+  .cc-film-poster {
+    width: 140px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .cc-film-title {
+    padding-bottom: 24px !important;
+    text-align: center !important;
+  }
+
+  .cc-film-title h1 {
+    font-size: 26px !important;
+  }
+
+  .cc-film-actions {
+    justify-content: center !important;
+  }
+
+  /* Film body: single column, sidebar goes below */
+  .cc-film-body {
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 24px 16px 80px !important;
+    gap: 24px !important;
+  }
+
+  /* Search/onboarding poster grid: 2 cols */
+  .cc-film-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* Profile header: smaller avatar */
+  .cc-profile-header {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 14px !important;
+    margin-top: 20px !important;
+  }
+
+  .cc-profile-avatar {
+    width: 88px !important;
+    height: 88px !important;
+    font-size: 32px !important;
+  }
 }
