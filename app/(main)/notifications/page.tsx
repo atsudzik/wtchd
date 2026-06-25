@@ -99,6 +99,19 @@ export default async function NotificationsPage() {
     : { data: [] };
   const mediaMap = new Map(media?.map((m) => [m.tmdb_id, m]) ?? []);
 
+  // Fetch which actors current user already follows
+  const followActorIds = actorIds.filter((id) =>
+    notifs.some((n) => n.type === "follow" && n.actor_id === id)
+  );
+  const { data: followingRows } = followActorIds.length > 0
+    ? await supabase
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", user!.id)
+        .in("following_id", followActorIds)
+    : { data: [] };
+  const followingSet = new Set(followingRows?.map((r) => r.following_id) ?? []);
+
   const enriched: Notif[] = notifs.map((n) => ({
     id: n.id,
     type: n.type,
@@ -218,7 +231,7 @@ export default async function NotificationsPage() {
 
                 {/* Poster or follow button */}
                 {n.type === "follow" && actor && (
-                  <FollowButton targetUserId={actor.id} initialFollowing={false} />
+                  <FollowButton targetUserId={actor.id} initialFollowing={followingSet.has(actor.id)} />
                 )}
                 {n.tmdb_id && posterUrl && (
                   <Link href={`/film/${n.media_type}/${n.tmdb_id}`} style={{ display: "block", flexShrink: 0, textDecoration: "none" }}>

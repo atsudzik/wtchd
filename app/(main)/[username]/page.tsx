@@ -1,3 +1,4 @@
+import type React from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -9,10 +10,12 @@ const ACCENT = "#F5A623";
 
 interface PageProps {
   params: Promise<{ username: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }
 
-export default async function ProfilePage({ params }: PageProps) {
+export default async function ProfilePage({ params, searchParams }: PageProps) {
   const { username } = await params;
+  const { tab } = await searchParams;
   const supabase = await createClient();
 
   // Current viewer
@@ -146,6 +149,32 @@ export default async function ProfilePage({ params }: PageProps) {
 
   const initial = (profile.full_name ?? profile.username ?? "?")[0].toUpperCase();
 
+  // Fetch followers/following list when tab is open
+  let followsList: { id: string; username: string | null; full_name: string | null; avatar_url: string | null }[] = [];
+  if (tab === "followers" || tab === "following") {
+    if (tab === "followers") {
+      const { data: fRows } = await supabase
+        .from("follows")
+        .select("follower_id")
+        .eq("following_id", profile.id);
+      const ids = fRows?.map((r) => r.follower_id) ?? [];
+      if (ids.length > 0) {
+        const { data } = await supabase.from("users").select("id, username, full_name, avatar_url").in("id", ids);
+        followsList = data ?? [];
+      }
+    } else {
+      const { data: fRows } = await supabase
+        .from("follows")
+        .select("following_id")
+        .eq("follower_id", profile.id);
+      const ids = fRows?.map((r) => r.following_id) ?? [];
+      if (ids.length > 0) {
+        const { data } = await supabase.from("users").select("id, username, full_name, avatar_url").in("id", ids);
+        followsList = data ?? [];
+      }
+    }
+  }
+
   return (
     <div className="cc-page" style={{ padding: "0 40px 64px", maxWidth: 940, margin: "0 auto" }}>
 
@@ -268,12 +297,12 @@ export default async function ProfilePage({ params }: PageProps) {
       {/* ── Stats ── */}
       <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
         {[
-          { value: watchedCount, label: "посмотрено" },
-          { value: followersCount, label: "подписчиков" },
-          { value: followingCount, label: "подписок" },
-          { value: avgRating, label: "средняя оценка" },
-        ].map(({ value, label }) => (
-          <div key={label} style={{
+          { value: watchedCount, label: "посмотрено", href: null },
+          { value: followersCount, label: "подписчиков", href: `/${username}?tab=followers` },
+          { value: followingCount, label: "подписок", href: `/${username}?tab=following` },
+          { value: avgRating, label: "средняя оценка", href: null },
+        ].map(({ value, label, href }) => {
+          const cardStyle: React.CSSProperties = {
             flex: 1,
             minWidth: 0,
             overflow: "hidden",
@@ -282,17 +311,87 @@ export default async function ProfilePage({ params }: PageProps) {
             borderRadius: 15,
             padding: "16px 18px",
             boxShadow: "0 1px 2px rgba(var(--line),0.04)",
-          }}>
-            <div style={{ fontWeight: 800, fontSize: 26, letterSpacing: "-.02em", lineHeight: 1 }}>
-              {value}
-            </div>
-            <div style={{ fontSize: 12.5, color: "var(--ink4)", marginTop: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</div>
-          </div>
-        ))}
+            textDecoration: "none",
+            color: "inherit",
+            display: "block",
+            cursor: href ? "pointer" : "default",
+          };
+          const inner = (
+            <>
+              <div style={{ fontWeight: 800, fontSize: 26, letterSpacing: "-.02em", lineHeight: 1 }}>{value}</div>
+              <div style={{ fontSize: 12.5, color: href ? ACCENT : "var(--ink4)", marginTop: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</div>
+            </>
+          );
+          return href ? (
+            <Link key={label} href={href} style={cardStyle}>{inner}</Link>
+          ) : (
+            <div key={label} style={cardStyle}>{inner}</div>
+          );
+        })}
       </div>
 
+      {/* ── Followers / Following list ── */}
+      {(tab === "followers" || tab === "following") && (
+        <div style={{ marginTop: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
+            <Link href={`/${username}?tab=followers`} style={{
+              fontWeight: 700, fontSize: 15, textDecoration: "none", paddingBottom: 6,
+              color: tab === "followers" ? "var(--ink)" : "var(--muted)",
+              borderBottom: tab === "followers" ? `2.5px solid ${ACCENT}` : "2.5px solid transparent",
+            }}>
+              Подписчики {followersCount > 0 && <span style={{ fontSize: 13, color: "var(--muted)" }}>{followersCount}</span>}
+            </Link>
+            <Link href={`/${username}?tab=following`} style={{
+              fontWeight: 700, fontSize: 15, textDecoration: "none", paddingBottom: 6,
+              color: tab === "following" ? "var(--ink)" : "var(--muted)",
+              borderBottom: tab === "following" ? `2.5px solid ${ACCENT}` : "2.5px solid transparent",
+            }}>
+              Подписки {followingCount > 0 && <span style={{ fontSize: 13, color: "var(--muted)" }}>{followingCount}</span>}
+            </Link>
+            <Link href={`/${username}`} style={{ marginLeft: "auto", fontSize: 13, color: "var(--muted)", textDecoration: "none" }}>
+              ✕ Закрыть
+            </Link>
+          </div>
+
+          {followsList.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 0", color: "var(--muted)", fontSize: 15 }}>
+              {tab === "followers" ? "Подписчиков пока нет" : "Нет подписок"}
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {followsList.map((u) => {
+                const uInitial = (u.full_name ?? u.username ?? "?")[0].toUpperCase();
+                return (
+                  <Link key={u.id} href={`/${u.username ?? ""}`} style={{
+                    display: "flex", alignItems: "center", gap: 13,
+                    padding: "12px 16px", borderRadius: 14,
+                    background: "var(--surface)", border: "1px solid rgba(var(--line),0.07)",
+                    textDecoration: "none", color: "inherit",
+                  }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
+                      overflow: "hidden", background: "linear-gradient(150deg,#3f7e6e,#225447)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: "#fff", fontWeight: 700, fontSize: 17,
+                    }}>
+                      {u.avatar_url
+                        ? <img src={u.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : uInitial}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14.5 }}>{u.full_name ?? u.username}</div>
+                      <div style={{ fontSize: 13, color: "var(--muted)" }}>@{u.username}</div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Tabs + grid (client) ── */}
-      <ProfileContent items={items} isOwnProfile={isOwnProfile} />
+      {!tab && <ProfileContent items={items} isOwnProfile={isOwnProfile} />}
     </div>
   );
 }
