@@ -133,21 +133,13 @@ export default function LoginPage() {
 
   return (
     <div
-      style={{
-        minHeight: "100vh",
-        display: "grid",
-        gridTemplateColumns: "1.05fr 1fr",
-        background: "var(--bg)",
-        color: "var(--ink)",
-      }}
+      className="cc-login-wrap"
+      style={{ background: "var(--bg)", color: "var(--ink)" }}
     >
       {/* ── LEFT: animated poster wall ── */}
       <div
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          background: "#15110e",
-        }}
+        className="cc-login-left"
+        style={{ background: "#15110e" }}
       >
         {/* drifting columns */}
         <div
@@ -325,6 +317,12 @@ export default function LoginPage() {
         }}
       >
         <div style={{ width: "100%", maxWidth: 404 }}>
+          {/* Logo — mobile only */}
+          <div className="cc-login-logo" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
+            <WchdLogo />
+            <span style={{ fontWeight: 800, fontSize: 20, letterSpacing: "-.03em" }}>WTCHD</span>
+          </div>
+
           {/* tab switch */}
           <div
             style={{

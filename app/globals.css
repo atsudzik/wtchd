@@ -146,6 +146,20 @@ input::placeholder {
   display: flex;
 }
 
+/* ── Login page ─────────────────────────────────────────────── */
+.cc-login-wrap {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  min-height: 100vh;
+}
+.cc-login-left {
+  position: relative;
+  overflow: hidden;
+}
+.cc-login-logo {
+  display: none;
+}
+
 /* ── Mobile ≤ 768px ─────────────────────────────────────────── */
 @media (max-width: 768px) {
   /* Remove sidebar offset and leave room for bottom nav */
@@ -174,6 +188,17 @@ input::placeholder {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     align-items: stretch;
+  }
+
+  /* Login: single column, hide poster wall, show logo */
+  .cc-login-wrap {
+    grid-template-columns: 1fr;
+  }
+  .cc-login-left {
+    display: none;
+  }
+  .cc-login-logo {
+    display: flex;
   }
 
   /* Tighten horizontal padding on all main pages */
